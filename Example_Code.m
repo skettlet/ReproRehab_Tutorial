@@ -16,4 +16,4 @@ bar([num1, num2]);
 title('num Plot');
 xlabel('Numbers');
 ylabel('Values');
-ylim([])
+ylim([0 8]);
