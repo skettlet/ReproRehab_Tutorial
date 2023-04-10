@@ -16,3 +16,4 @@ bar([num1, num2]);
 title('Numbers Plot');
 xlabel('Numbers');
 ylabel('Values');
+ylim([0,10])
