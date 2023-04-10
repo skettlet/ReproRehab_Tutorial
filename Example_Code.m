@@ -5,7 +5,8 @@ num1 = 5;
 num2 = 7;
 
 % Calculate the average of the two numbers
-average = (num1 + num2) / 2;
+sum = num1 + num2;
+average = (sum) / 2;
 
 % Display the result
 disp(['The average of ' num2str(num1) ' and ' num2str(num2) ' is ' num2str(average)]);
