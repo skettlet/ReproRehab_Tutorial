@@ -1,0 +1,153 @@
+---
+title: "Figure6"
+author: "Natalie McLain"
+date: "2023-03-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(ggplot2)
+library(lme4)
+library(sjPlot)
+```
+read in data 
+```{r}
+# T=read.table('/Users/nataliemclain/Desktop/trial.xlsx',header=TRUE,fileEncoding=,skipNul=TRUE);
+T=read.csv('/Users/nataliemclain/Desktop/trial2.csv',header=TRUE);
+```
+
+
+```{r}
+T = T[T$cohorttype==1,]; #patients
+```
+
+models
+```{r}
+formula_phys='sf12_pcs~ sex + fullage + siteid + Gupi_qspainave + (Gupi_qspainave|PID)';
+formula_mental='sf12_mcs ~ sex + fullage + siteid + Gupi_qspainave +(Gupi_qspainave|PID)';
+```
+
+
+```{r}
+sf12phy_lme=lmer(sf12_pcs~ sex + fullage + siteid + Gupi_qspainave + (Gupi_qspainave|PID),T);
+sf12mental_lme=lmer(sf12_mcs ~ sex + fullage + siteid + Gupi_qspainave +(Gupi_qspainave|PID),T);
+#flare_lme=glm(symq_flarenow ~ sex + fullage + siteid + Gupi_qspainave +(Gupi_qspainave|PID),family=binomial,T);
+flare_lme=lmer(Gupi_qspainave ~ sex + fullage + siteid + symq_flarenow +(symq_flarenow|PID),T);
+#double check warning; may get a different result if run multiple times 
+```
+physical function
+```{r}
+pdf("/Users/nataliemclain/Desktop/physical_pain.pdf",width=3.5,height=2.5)
+
+fixed_effects <- fixef(sf12phy_lme)
+random_effects <- ranef(sf12phy_lme)$PID
+
+coefs = as.data.frame(coef(sf12phy_lme)$PID) 
+coefs$PID = rownames(coefs) 
+coefs=coefs[,c(1,5,6)]
+colnames(coefs) = c("Intercept", "Pain", "PID")
+
+ggplot(T,aes(y=sf12_pcs,x=Gupi_qspainave))+
+  geom_point(color="white") +
+  geom_abline(aes(slope=Pain,intercept=Intercept,color=PID),data=coefs,alpha=0.2)+ 
+  geom_smooth(method="lm",formula=y~x,se=F,color="black")+
+  theme_bw()+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.border = element_blank(),axis.line = element_line(colour = "black"))+
+  theme(legend.position = "none")+
+  expand_limits(x = c(0,10), y = c(0,80))+
+  scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0))
+
+dev.off()
+```
+mental function 
+
+```{r}
+pdf("/Users/nataliemclain/Desktop/mental_pain2.pdf",width=3.5,height=2.5)
+
+fixed_effects <- fixef(sf12mental_lme)
+random_effects <- ranef(sf12mental_lme)$PID
+
+coefs = as.data.frame(coef(sf12mental_lme)$PID) 
+coefs$PID = rownames(coefs) 
+coefs=coefs[,c(1,5,6)]
+colnames(coefs) = c("Intercept", "Pain", "PID")
+
+ggplot(T,aes(x=Gupi_qspainave, y=sf12_mcs))+
+  geom_point(color="white") +
+  geom_abline(aes(slope=Pain,intercept=Intercept,color=PID),data=coefs,alpha=0.2)+ 
+  geom_smooth(method="lm",formula=y~x,se=F,color="black")+
+  theme_bw()+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.border = element_blank(),axis.line = element_line(colour = "black"))+
+  theme(legend.position = "none")+
+  expand_limits(x = c(0,10), y = c(0,80))+
+  scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0))
+  
+  
+   
+
+dev.off()
+```
+
+flare yes no
+```{r}
+summary(flare_lme)
+#odds ratio comparing patients with yes flare versus no flare given their pain rating 
+pain=c(1:10)
+```
+flare_lme
+```{r}
+pdf("/Users/nataliemclain/Desktop/flare_pain.pdf",width=3.5,height=2.5)
+fixed_effects <- fixef(flare_lme)
+random_effects <- ranef(flare_lme)$PID
+
+coefs = as.data.frame(coef(flare_lme)$PID) 
+coefs$PID = rownames(coefs) 
+coefs=coefs[,c(1,5,6)]
+colnames(coefs) = c("Intercept", "Pain", "PID")
+
+ggplot(T,aes(x=symq_flarenow, y=Gupi_qspainave))+
+    geom_point(color="white") +
+  geom_abline(aes(slope=Pain,intercept=Intercept,color=PID),data=coefs,alpha=0.2)+ 
+  geom_smooth(method="lm",formula=y~x,se=F,color="black")+
+  theme_bw()+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.border = element_blank(),axis.line = element_line(colour = "black"))+
+  theme(legend.position = "none")+xlim(0,10)+
+  expand_limits(x = 0, y = 0)+
+  scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0))
+   
+
+dev.off()
+```
+
+
+plot the predicted values of sf12_pcs for different values of Gupi_qspainave, with confidence intervals shown and a vertical red line indicating the mean value of Gupi_qspainave
+```{r}
+library(lme4)
+library(ggplot2)
+library(sjPlot)
+
+plot_model(sf12mental_lme, type = "pred", terms = c("Gupi_qspainave"), show.ci = TRUE, int.color = "blue")+
+theme_bw()+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+theme(legend.position = "none")+xlim(0,10)
+```
+Alt method to plot with ggplot
+```{r}
+# get predicted values and confidence intervals
+preds <- predict(sf12mental_lme, T, re.form = NA, allow.new.levels = TRUE)
+intervals <- predict(sf12mental_lme, T, level = 0.95, re.form = NA, allow.new.levels = TRUE, interval = "confidence")
+Gupi_qspainave=T$Gupi_qspainave
+
+# create ggplot object
+p <- ggplot(data=T) +
+  geom_line(aes(x = Gupi_qspainave, y = preds)) +
+  geom_ribbon(aes(x = Gupi_qspainave, ymin = intervals[, 0], ymax = intervals[, 10]), alpha = 0.3, fill = "blue") +
+  xlab("Gupi_qspainave") + ylab("sf12_pcs")
+
+# display plot
+print(p)
+```
+
